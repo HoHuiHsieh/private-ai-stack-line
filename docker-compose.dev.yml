@@ -1,0 +1,12 @@
+# Dev overrides for line. Started by: ./start.sh dev line
+# Hot reload (tsx watch) with the source bind-mounted.
+services:
+  line:
+    build:
+      target: dev
+    volumes:
+      - ./:/app
+      - line_node_modules:/app/node_modules
+
+volumes:
+  line_node_modules:

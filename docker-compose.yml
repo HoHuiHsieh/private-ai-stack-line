@@ -1,0 +1,44 @@
+# Prod services for line (LINE bot bridge, LINE MCP, internal API). Started by: ./start.sh prod line
+# Internal only (no ports). ngrok (in this project) forwards the public LINE webhook to http://line:3000.
+# agent-service reaches the internal API at http://line:3000/internal/... (LINE_SERVICE_URL).
+name: private-ai-stack-line
+
+services:
+  line:
+    build:
+      context: .
+      target: runner
+    env_file:
+      - ../../.env
+      - ./env/.env.line
+    volumes:
+      - ../../certs:/certs:ro
+      - ./models.json:/app/config/models.json:ro   # tiered model config (llm, audio, ...), read at startup                                         # stack CA
+      - ../../openwebui/line-bot-tools.json:/app/config/line-bot-tools.json:ro        # tools the LINE bot may call
+      - ../../openwebui/line-bot-features.json:/app/config/line-bot-features.json:ro  # chat features for the bot
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  # ngrok: public HTTPS tunnel for the LINE webhook. Outbound only, no published ports.
+  # Forwards to this service (line:3000) on the backend network. Secrets come from env/.env.ngrok.
+  ngrok:
+    image: ngrok/ngrok:3
+    env_file:
+      - path: ./env/.env.ngrok
+        required: false   # create it with NGROK_AUTHTOKEN; the stack still starts without it
+    command: ["http", "line:3000"]
+    depends_on:
+      line:
+        condition: service_started
+    restart: unless-stopped
+    networks: [backend]
+
+networks:
+  backend:
+    external: true
+    name: private-ai-stack_backend   # root stack network; start the root stack first

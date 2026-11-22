@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "sources": {
+    "local-whisper": {
+      "type": "openai-compatible",
+      "baseUrl": "http://whisper:8000/v1"
+    }
+  },
+  "models": {
+    "audio": {
+      "tiers": {
+        "standard": {
+          "source": "local-whisper",
+          "model": "Systran/faster-whisper-small",
+          "task": "transcription"
+        }
+      }
+    }
+  }
+}
