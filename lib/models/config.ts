@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
  * Loads models.json: tiered model configuration for this service. Categories are llm, vlm, embedding and
  * audio. Each category maps tier names (fast, standard, premium, ...) to a model on a named source.
  *
- * Secrets never go in the file. A source names the environment variable that holds its key
- * (apiKeyEnv), and the value comes from the container's env file.
+ * API keys live in the gitignored models.json. A tracked example may contain placeholders,
+ * but never real credentials.
  *
  * The file is read once, on first use, and validated as a whole. A broken file fails loudly with the
  * path of the problem, so it is never half-applied.
@@ -23,7 +23,7 @@ const DEFAULT_BASE_URL: Partial<Record<SourceType, string>> = {
   anthropic: "https://api.anthropic.com",
 };
 
-type SourceEntry = { type: SourceType; baseUrl?: string; apiKeyEnv?: string };
+type SourceEntry = { type: SourceType; baseUrl?: string; apiKey?: string };
 type TierEntry = { source: string; model: string; dimensions?: number; task?: string };
 export type ModelsFile = {
   version: 1;
@@ -81,9 +81,12 @@ export function parseModelsConfig(text: string): ModelsFile {
     if (typeof type !== "string" || !(SOURCE_TYPES as readonly string[]).includes(type)) {
       fail(`${where}.type must be one of ${SOURCE_TYPES.join(", ")}`);
     }
+    if (value.apiKeyEnv !== undefined) {
+      fail(`${where}.apiKeyEnv is no longer supported; configure apiKey in the gitignored models.json`);
+    }
     const entry: SourceEntry = { type: type as SourceType };
     if (value.baseUrl !== undefined) entry.baseUrl = nonEmptyString(value.baseUrl, `${where}.baseUrl`);
-    if (value.apiKeyEnv !== undefined) entry.apiKeyEnv = nonEmptyString(value.apiKeyEnv, `${where}.apiKeyEnv`);
+    if (value.apiKey !== undefined) entry.apiKey = nonEmptyString(value.apiKey, `${where}.apiKey`);
     if (entry.type === "ollama" || entry.type === "openai-compatible") {
       if (!entry.baseUrl) fail(`${where}.baseUrl is required for type ${entry.type}`);
     }
@@ -141,7 +144,7 @@ export function loadModelsConfig(): ModelsFile {
 
 /**
  * The model for a category and tier, with its source resolved. Throws ModelConfigError when the tier is
- * missing, or when the source needs an environment variable that is not set (naming the variable, never its value).
+ * missing.
  */
 export function getModel(category: ModelCategory, tier = "standard"): ResolvedModel {
   const config = loadModelsConfig();
@@ -154,19 +157,13 @@ export function getModel(category: ModelCategory, tier = "standard"): ResolvedMo
   const baseUrl = source.baseUrl ?? DEFAULT_BASE_URL[source.type];
   if (!baseUrl) fail(`source "${entry.source}" has no baseUrl`);
 
-  let apiKey: string | undefined;
-  if (source.apiKeyEnv) {
-    apiKey = process.env[source.apiKeyEnv]?.trim();
-    if (!apiKey) fail(`${source.apiKeyEnv} is not set (needed by source "${entry.source}")`);
-  }
-
   return {
     category,
     tier,
     source: entry.source,
     type: source.type,
     baseUrl: baseUrl.replace(/\/$/, ""),
-    apiKey,
+    apiKey: source.apiKey,
     model: entry.model,
     dimensions: entry.dimensions,
     task: entry.task,

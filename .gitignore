@@ -2,3 +2,4 @@ env/*
 !env/*.example
 !env/.env.dev
 node_modules/
+config/
