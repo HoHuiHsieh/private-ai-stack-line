@@ -13,7 +13,7 @@ services:
       - ./env/.env.line
     volumes:
       - ../../certs:/certs:ro
-      - ./models.json:/app/config/models.json:ro   # tiered model config (llm, audio, ...), read at startup                                         # stack CA
+      - ../../models.json:/app/config/models.json:ro   # tiered model config (llm, audio, ...), read at startup                                         # stack CA
       - ../../openwebui/line-bot-tools.json:/app/config/line-bot-tools.json:ro        # tools the LINE bot may call
       - ../../openwebui/line-bot-features.json:/app/config/line-bot-features.json:ro  # chat features for the bot
     healthcheck:
