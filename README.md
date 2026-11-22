@@ -1,5 +1,7 @@
 # line
 
+> This directory is a sub-project of [`private-ai-stack`](../..).
+
 LINE bot bridge. A LINE message goes to Open WebUI, which answers with the model named in the bot's settings,
 and the answer goes back to LINE. This service also serves the LINE MCP (bot setup and checks) and the
 ngrok tunnel that gives LINE a public webhook URL.

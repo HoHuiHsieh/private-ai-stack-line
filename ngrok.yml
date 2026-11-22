@@ -1,0 +1,4 @@
+version: "3"
+# Agent API on all interfaces so line and agent-service can read the tunnel list. No secrets here.
+agent:
+  web_addr: 0.0.0.0:4040

@@ -31,7 +31,9 @@ services:
     env_file:
       - path: ./env/.env.ngrok
         required: false   # create it with NGROK_AUTHTOKEN; the stack still starts without it
-    command: ["http", "line:3000"]
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml:ro   # web_addr for the tunnel API (agent check uses http://ngrok:4040)
+    command: ["--config", "/etc/ngrok.yml", "http", "line:3000"]
     depends_on:
       line:
         condition: service_started
